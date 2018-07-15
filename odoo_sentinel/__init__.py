@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # © 2011-2015 Sylvain Garancher <sylvain.garancher@syleam.fr>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
@@ -6,7 +7,6 @@ import argparse
 import curses.ascii
 import gettext
 import math
-import locale
 import odoorpc
 import os
 import sys
@@ -15,9 +15,6 @@ import traceback
 
 from datetime import datetime
 from functools import reduce
-
-locale.setlocale(locale.LC_ALL, '')
-encoding = locale.getpreferredencoding()
 
 # Translation configuration
 I18N_DIR = '%s/i18n/' % os.path.dirname(os.path.realpath(__file__))
@@ -58,6 +55,7 @@ class Sentinel(object):
     """
 
     def __init__(self, stdscr, options):
+
         """
         Initialize the sentinel program
         """
@@ -65,15 +63,19 @@ class Sentinel(object):
             # Try to autodetect an OdooRPC configuration
             self.connection = odoorpc.ODOO.load(options.profile)
         else:
-            raise Exception(_(
+            raise Exception(
                 'Profile "{options.profile}" not found in file '
                 '{options.config_file}!'
-            ).format(options=options))
+            .format(options=options))
 
         self.log_file = os.path.expanduser(options.log_file)
         self.test_file = None
         if options.test_file:
             self.test_file = open(os.path.expanduser(options.test_file), 'r')
+
+        # Replace global dummy lambda by the translations gettext method
+        # The install method of gettext doesn't replace the function if exists
+        # global _
 
         # Initialize translations
         lang = self.connection.env.context.get('lang', I18N_DEFAULT)
@@ -85,18 +87,11 @@ class Sentinel(object):
             language = gettext.translation(
                 I18N_DOMAIN, I18N_DIR, languages=[I18N_DEFAULT])
 
-        # Replace global dummy lambda by the translations gettext method
-        # The install method of gettext doesn't replace the function if exists
         global _
         _ = language.gettext
 
         # Initialize window
         self.screen = stdscr
-        self.auto_resize = False
-        self.window_width = 18
-        self.window_height = 6
-        # Store the initial screen size before resizing it
-        initial_screen_size = self.screen.getmaxyx()
         self._set_screen_size()
 
         self._init_colors()
@@ -110,17 +105,11 @@ class Sentinel(object):
             self.hardware_code = ssh_data[0]
             self.scanner_check()
         except:
-            try:
-                self.hardware_code = os.environ['ODOO_SENTINEL_CODE']
-                self.scanner_check()
-            except:
-                self.hardware_code = self._input_text(
-                    _('Autoconfiguration failed !\nPlease enter terminal code')
-                )
-                self.scanner_check()
+            self.hardware_code = self._input_text(
+                _('Autoconfiguration failed !\nPlease enter terminal code'))
+            self.scanner_check()
 
         # Reinit colors with values configured in OpenERP
-        self._resize(initial_screen_size)
         self._reinit_colors()
 
         # Initialize mouse events capture
@@ -140,23 +129,6 @@ class Sentinel(object):
             'scanner.hardware'].scanner_check(self.hardware_code)
         if isinstance(self.scenario_id, list):
             self.scenario_id, self.scenario_name = self.scenario_id
-
-    def _resize(self, initial_screen_size):
-        """
-        Resizes the window
-        """
-        # Asks for the hardware screen size
-        (
-            self.window_width,
-            self.window_height,
-        ) = self.oerp_call('screen_size')[1]
-        if not self.window_width or not self.window_height:
-            self.auto_resize = True
-            # Restore the initial size to allow detecting the real size
-            (self.window_height, self.window_width) = initial_screen_size
-            self.screen.resize(self.window_height, self.window_width)
-
-        self._set_screen_size()
 
     def _init_colors(self):
         """
@@ -182,13 +154,7 @@ class Sentinel(object):
         self._init_colors()
 
     def _set_screen_size(self):
-        # Get the dimensions of the hardware
-        if self.auto_resize:
-            (
-                self.window_height,
-                self.window_width,
-            ) = self.screen.getmaxyx()
-
+        self.window_height, self.window_width = self.screen.getmaxyx()
         self.screen.resize(self.window_height, self.window_width)
 
     def _get_color(self, name):
@@ -261,7 +227,7 @@ class Sentinel(object):
 
         # Display the text
         if not scroll:
-            self.screen.addstr(y, x, text.encode(encoding), color)
+            self.screen.addstr(y, x, text, color)
         else:
             # Wrap the text to avoid splitting words
             text_lines = []
@@ -281,9 +247,9 @@ class Sentinel(object):
                 # Display the menu
                 self.screen.addstr(height - 1, x,
                                    (self.window_width - x - 1) * ' ', color)
-                text = text_lines[first_line:first_line + height - y]
                 self.screen.addstr(
-                    y, x, '\n'.join(text).encode(encoding),
+                    y, x, '\n'.join(
+                        text_lines[first_line:first_line + height - y]),
                     color)
 
                 # Display arrows
