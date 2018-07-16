@@ -65,10 +65,10 @@ class Sentinel(object):
             # Try to autodetect an OdooRPC configuration
             self.connection = odoorpc.ODOO.load(options.profile)
         else:
-            raise Exception(_(
+            raise Exception(
                 'Profile "{options.profile}" not found in file '
                 '{options.config_file}!'
-            ).format(options=options))
+            .format(options=options))
 
         self.log_file = os.path.expanduser(options.log_file)
         self.test_file = None
@@ -904,7 +904,7 @@ def main():
         '-p', '--profile', dest='profile', default='sentinel',
         help='OdooRPC profile to use.')
     parser.add_argument(
-        '-c', '--config', dest='config_file', default='~/.odoorpcrc',
+        '-c', '--config', dest='config_file', default='~/odoorpcrc',
         help='OdooRPC configuration file to use.')
     parser.add_argument(
         '-l', '--log-file', dest='log_file', default='~/sentinel.log',
